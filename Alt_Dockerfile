@@ -1,0 +1,30 @@
+#FROM mavenqa.got.volvo.net:18443/nvs-dotnet-20-runtime-centos7:latest
+
+#WORKDIR /app
+#COPY . .
+#RUN dotnet restore
+#ENTRYPOINT ["dotnet", "run"]
+
+#ADD docker-entrypoint.sh /
+#ENTRYPOINT ["/docker-entrypoint.sh"]
+#CMD ["artemis-server"]
+
+FROM microsoft/aspnetcore-build:2.0 AS build-env
+WORKDIR /app
+
+ENV http_proxy http://a283767:Skorpan15@httppxgot.srv.volvo.com:8080
+ENV https_proxy http://a283767:Skorpan15@httppxgot.srv.volvo.com:8080
+
+# Copy csproj and restore as distinct layers
+COPY *.csproj ./
+RUN dotnet restore
+
+# Copy everything else and build
+COPY . ./
+RUN dotnet publish -c Release -o out
+
+# Build runtime image
+FROM microsoft/aspnetcore:2.0
+WORKDIR /app
+COPY --from=build-env /app/out .
+ENTRYPOINT ["dotnet", "OpenshiftPlaftformServices.dll"]
